@@ -66,8 +66,8 @@ public class MedicationController {
                 Message hl7AckMessage=null;
                 Message hl7Message = null;
                 String outputFHIR = null;
-               // System.out.println("Request: " + strHL7.replace("\n","\r"));
-                
+               // System.out.println("Request: " + strHL7.replace("\n","\r"));         
+        
                 try {
                     PipeParser pipeParser = new PipeParser();
                     // AF message from HL7 rest API may have the wrong carriage return force it to the correct one or parser fails !
