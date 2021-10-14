@@ -36,15 +36,82 @@ import java.util.Base64;
 import java.util.Map;
 
 // HAPI HL7 V2 imports
+import ca.uhn.hl7v2.DefaultHapiContext;
+import ca.uhn.hl7v2.HapiContext;
 import ca.uhn.hl7v2.model.Message;
 import ca.uhn.hl7v2.parser.PipeParser;
 import ca.uhn.hl7v2.util.Terser;
+import ca.uhn.hl7v2.app.Connection;
+import ca.uhn.hl7v2.app.Initiator;
 
 import io.github.linuxforhealth.hl7.HL7ToFHIRConverter;
-
+ 
 
 @RestController
 public class MedicationController {
+
+
+    private static final int PORT_NUMBER = 2575;// change this to whatever your port number is
+    private static final String HL7_MLLP_HOST = "localhost";// change this to whatever your port number is
+    private static HapiContext context = new DefaultHapiContext();
+
+    // take a HL7 message and send it on to a local MLLP server.
+    // okay this follows the specification of https://hapifhir.github.io/hapi-hl7v2/hapi-hl7overhttp/specification.html
+    //  note we cannot parse the HL7 message directly in the @RequestBody because it is not json/xml
+    // so hence the String and parsing inside of the function based on HAPI HL7 system.
+    
+    @RequestMapping(value="/mllp/**",
+                  headers="Accept=*/*",
+                  method = { RequestMethod.POST },
+                  consumes = {" x-application/hl7-v2+er7"},
+                   produces = { "application/hl7-v2+er7" })
+    @ResponseBody
+    public String processHL7RequestMLLP(
+        @RequestParam Map<String, String> reqParam,
+        @RequestHeader Map<String, String> reqHeaders, 
+        @RequestBody String strHL7,
+        HttpServletRequest request)
+            throws IOException, NameNotFoundException {
+                Message hl7AckMessage=null;
+                Message hl7Message = null;
+               // System.out.println("Request: " + strHL7.replace("\n","\r"));         
+        
+                try {
+                    PipeParser pipeParser = new PipeParser();
+                    // AF message from HL7 rest API may have the wrong carriage return force it to the correct one or parser fails !
+                    hl7Message = pipeParser.parse(strHL7.replace("\n","\r"));
+                                    
+
+                    Terser terser = new Terser(hl7Message);
+
+                    HL7TerserHelper terserhelper = new HL7TerserHelper(terser);
+                    try {
+                        String data = terserhelper.getData("/.MSH-6");
+                        System.out.println("Field 6 of MSH, the destination is :" + data);
+                        data = terserhelper.getData("/.MSH-9");
+                        System.out.println("Field 9 of MSH, the destination is :" + data);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    // example of this code comes from https://saravanansubramanian.com/hl72xhapisendmessage/
+                    // create a new MLLP client over the specified port
+                    Connection connection = context.newClient(HL7_MLLP_HOST, PORT_NUMBER, false);
+                    
+                    // The initiator which will be used to transmit our message
+                    Initiator initiator = connection.getInitiator();
+
+                    hl7AckMessage = initiator.sendAndReceive(hl7Message);
+                    //  was constructing ACK message by hand for a little while before finding this.
+                    //hl7AckMessage = hl7Message.generateACK();
+            //        this.kafkaProducer.saveString( hl7Message.toString() );
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+               
+       
+        return hl7AckMessage.toString() ;
+    }
 
 
     // okay this follows the specification of https://hapifhir.github.io/hapi-hl7v2/hapi-hl7overhttp/specification.html
