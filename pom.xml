@@ -58,6 +58,8 @@
 		<groupId>io.github.linuxforhealth</groupId>
 		<artifactId>hl7v2-fhir-converter</artifactId>
 		<version>1.0.10</version>
+		<scope>system</scope>
+		<systemPath>/home/frasera/dev/VSCode/hl7v2-fhir-converter/build/libs/hl7v2-fhir-converter-1.0.1-SNAPSHOT-all.jar</systemPath>
 	  </dependency>
 	 
 	  <dependency>
@@ -65,6 +67,11 @@
 		<artifactId>hapi-fhir-structures-dstu3</artifactId>
 		<version>5.3.3</version>
 		
+	</dependency>
+	<dependency>
+		<groupId>ca.uhn.hapi.fhir</groupId>
+		<artifactId>hapi-fhir-base</artifactId>
+		<version>5.3.3</version>
 	</dependency>
 
 	</dependencies>
@@ -74,6 +81,10 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<!-- Needed to include internal lib above -->
+				<configuration>
+					<includeSystemScope>true</includeSystemScope>
+				  </configuration>
 			</plugin>
 		</plugins>
 	</build>
